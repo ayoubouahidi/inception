@@ -1,33 +1,80 @@
 services:
   nginx:
-    build: requirements/nginx/
     ports: 
       - 443:443
     image: nginx:inception
+    build:
+      context: nginx
+      dockerfile: Dockerfile
     container_name: nginx
+    env_file: .env
     networks:
       - inception
     volumes:
-      - worldpress_dataflow:/var/www/html
+      - wordpress_dataflow:/var/www/html
+    depends_on:
+      -  wordpress
+    restart: always
 
-  worldpress:
-    build: requirements/wordpress/
+  wordpress:
     container_name: wordpress
-    ports:
-      - 9000:9000
+    build:
+      context: wordpress
+      dockerfile: Dockerfile
+    image: wordpress:inception
+    env_file: .env
     networks:
       - inception
     volumes:
-      - worldpress_dataflow:/var/www/html
+      - wordpress_dataflow:/var/www/html
+    depends_on:
+      -  mariadb
+    restart: always
+    secrets:
+      - db_password
+      - credentials
+  
+  mariadb:
+    container_name: mariadb
+    image: mariadb:inception
+    build:
+      context: mariadb
+      dockerfile: Dockerfile
+    restart: always
+    env_file: .env
+    networks:
+      - inception
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    secrets:
+      - db_password
+      - db_root_password
+
+    
 
 networks:
   inception:
+    driver: bridge
     name: inception_network
 
 volumes:
-  worldpress_dataflow:
+  wordpress_dataflow:
     driver: local
     driver_opts:
       type: none
       o: bind
       device: /home/ayouahid/data/wordpress
+  mariadb_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device : /home/ayouahid/data/mariadb
+
+secrets:
+  db_password:
+    file: ../secrets/db_password.txt
+  db_root_password:
+    file: ../secrets/db_root_password.txt
+  credentials:
+    file: ../secrets/credentials.txt

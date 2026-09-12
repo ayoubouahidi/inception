@@ -8,8 +8,6 @@ DB_USER=$MYSQL_USER
 DB_PASSWORD=$(cat /run/secrets/db_password)
 source /run/secrets/credentials
 
-
-
 counter=0
 while ! (exec 3<>/dev/tcp/$DB_HOST/3306) 2>/dev/null && (($counter<20)) ; do
 	echo "Waiting for Mariadbd setup to finish..."
@@ -23,7 +21,11 @@ if (( counter >= 20 )); then
 fi
 
 if [ ! -f "/var/www/html/wp-config.php" ]; then
-	
+
+	if [ ! -f "/var/www/html/wp-load.php" ]; then
+		wp core download --allow-root --path=/var/www/html
+	fi
+
 	wp config create \
 	--dbname=${DB_NAME} \
 	--dbuser=${DB_USER} \
@@ -32,21 +34,19 @@ if [ ! -f "/var/www/html/wp-config.php" ]; then
 	--allow-root
 
 	wp core install \
-	--url=https://login.42.fr \
+	--url=https://ayouahid.42.fr \
 	--title="Inception" \
-	--admin_user=saad \
+	--admin_user=ayoub \
 	--admin_password=$ADMIN_PASSWORD \
 	--admin_email=admin@example.com \
 	--allow-root
-
-	wp plugin install redis-cache --activate --allow-root
-	wp config set WP_REDIS_HOST redis --allow-root
-	wp redis enable  --allow-root
 
 	wp user create simo \
 	simo@gmail.com \
 	--user_pass=$USER_PASSWORD \
 	--allow-root
+
+	chown -R www-data:www-data /var/www/html
 
 fi
 exec "$@"
