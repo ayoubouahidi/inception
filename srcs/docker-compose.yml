@@ -1,0 +1,33 @@
+services:
+  nginx:
+    build: requirements/nginx/
+    ports: 
+      - 443:443
+    image: nginx:inception
+    container_name: nginx
+    networks:
+      - inception
+    volumes:
+      - worldpress_dataflow:/var/www/html
+
+  worldpress:
+    build: requirements/wordpress/
+    container_name: wordpress
+    ports:
+      - 9000:9000
+    networks:
+      - inception
+    volumes:
+      - worldpress_dataflow:/var/www/html
+
+networks:
+  inception:
+    name: inception_network
+
+volumes:
+  worldpress_dataflow:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/ayouahid/data/wordpress
