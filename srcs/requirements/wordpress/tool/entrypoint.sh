@@ -3,13 +3,14 @@
 set -e
 
 DB_HOST=mariadb
+DB_PORT=3306
 DB_NAME=$MYSQL_DATABASE
 DB_USER=$MYSQL_USER
 DB_PASSWORD=$(cat /run/secrets/db_password)
 source /run/secrets/credentials
 
 counter=0
-while ! (exec 3<>/dev/tcp/$DB_HOST/3306) 2>/dev/null && (($counter<20)) ; do
+while ! (exec 3<>/dev/tcp/$DB_HOST/$DB_PORT) 2>/dev/null && (($counter<20)) ; do
 	echo "Waiting for Mariadbd setup to finish..."
 	sleep 1
 	counter=$((counter+1))
@@ -30,8 +31,8 @@ if [ ! -f "/var/www/html/wp-config.php" ]; then
 	--dbname=${DB_NAME} \
 	--dbuser=${DB_USER} \
 	--dbpass=${DB_PASSWORD} \
-	--dbhost=${DB_HOST} \
-	--allow-root
+	--dbhost=${DB_HOST}:${DB_PORT} \
+	--allow-root --force
 
 	wp core install \
 	--url=https://ayouahid.42.fr \
@@ -47,6 +48,10 @@ if [ ! -f "/var/www/html/wp-config.php" ]; then
 	--allow-root
 
 	chown -R www-data:www-data /var/www/html
+
+else
+
+	wp config set DB_HOST ${DB_HOST}:${DB_PORT} --allow-root
 
 fi
 exec "$@"
